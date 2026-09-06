@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "S POS",
+    "slug": "s-pos-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "spos",
+    "splash": {
+      "backgroundColor": "#101828",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.spos.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "S POS uses the camera to scan product barcodes and QR codes."
+      }
+    },
+    "android": {
+      "package": "com.spos.mobile",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      ["expo-camera", { "cameraPermission": "Allow S POS to scan product barcodes." }]
+    ]
+  }
+}

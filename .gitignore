@@ -1,0 +1,26 @@
+# --- dependencies & environments ---
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- build output ---
+frontend/dist/
+desktop/dist/
+desktop/build/
+desktop/_build_tmp/
+mobile/.expo/
+*.spec.bak
+
+# --- local data, logs & secrets ---
+.env
+*.sqlite3
+mobile/.devdata/
+*.log
+
+# --- local tooling & editor settings ---
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

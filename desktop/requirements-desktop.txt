@@ -1,0 +1,7 @@
+# S POS desktop app — extra runtime + build dependencies
+# (installed on top of ../backend/v17src/requirements.txt)
+waitress==3.0.2        # production WSGI server, pure-Python, no compiler needed
+pyinstaller==6.22.2    # builds the standalone SPOS.exe
+# The app window uses the system Edge/Chrome in "app mode" — no extra dependency.
+# Optional: install pywebview for a pure-native window instead:
+#   pip install pywebview
