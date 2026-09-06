@@ -195,6 +195,39 @@ tax, low stock, sales report, payments breakdown and **X report** for the open s
 **Z report** at day end. **Registers** — physical tills and their sessions.
 **Settings** — store, tax rates, users and company configuration.
 
+### All remaining back-office pages
+
+| Gift Cards | Loyalty | Time Clock |
+|---|---|---|
+| ![](screenshots/desktop/13-gift-cards.png) | ![](screenshots/desktop/14-loyalty.png) | ![](screenshots/desktop/15-time-clock.png) |
+
+| Variants | Promotions | Price Lists |
+|---|---|---|
+| ![](screenshots/desktop/16-variants.png) | ![](screenshots/desktop/17-promotions.png) | ![](screenshots/desktop/18-price-lists.png) |
+
+| Stock Counts | Transfers | Suppliers |
+|---|---|---|
+| ![](screenshots/desktop/19-stock-counts.png) | ![](screenshots/desktop/20-transfers.png) | ![](screenshots/desktop/21-suppliers.png) |
+
+| Refunds | Expenses | Approvals |
+|---|---|---|
+| ![](screenshots/desktop/22-refunds.png) | ![](screenshots/desktop/23-expenses.png) | ![](screenshots/desktop/24-approvals.png) |
+
+| Reconciliation | Sessions | Cash Movements |
+|---|---|---|
+| ![](screenshots/desktop/25-reconciliation.png) | ![](screenshots/desktop/26-sessions.png) | ![](screenshots/desktop/27-cash-movements.png) |
+
+| Stores | Companies | Users | Tax Rates |
+|---|---|---|---|
+| ![](screenshots/desktop/28-stores.png) | ![](screenshots/desktop/29-companies.png) | ![](screenshots/desktop/30-users.png) | ![](screenshots/desktop/31-tax-rates.png) |
+
+Gift cards (issue, balance, expiry — server-enforced), loyalty rules, staff time
+clock, product variants & modifiers, promotion rules, price lists, cycle counts,
+inter-store transfers, supplier book, refunds with GL reversal, expenses with
+approval workflow, drawer-vs-ledger reconciliation, register sessions, paid-in/out
+cash movements, multi-store/multi-company with per-company currency, role-based
+users with PIN, and tax-rate setup.
+
 ---
 
 ## 🌍 The website in a phone / tablet browser

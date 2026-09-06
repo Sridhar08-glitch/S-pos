@@ -32,38 +32,76 @@ Cash / Card / QR / Bank / Wallet, exact-cash helper, **Park** a sale / resume **
 sales, **Complete sale**, Clear cart.
 
 ### SELL — Sales · Customers · Gift Cards · Loyalty · Time Clock
-![Sales](../docs/screenshots/desktop/04-sales.png)
-![Customers](../docs/screenshots/desktop/05-customers.png)
+| Sales | Customers |
+|---|---|
+| ![](../docs/screenshots/desktop/04-sales.png) | ![](../docs/screenshots/desktop/05-customers.png) |
+| Gift Cards | Loyalty |
+| ![](../docs/screenshots/desktop/13-gift-cards.png) | ![](../docs/screenshots/desktop/14-loyalty.png) |
+
+![Time Clock](../docs/screenshots/desktop/15-time-clock.png)
+
 Sales history with receipt reprint and **partial refunds** (item + quantity).
 Customers: CRM with loyalty balance, store credit and purchase history — plus
-read-only **credit / gift-card / store-credit ledgers**. Time Clock: staff shifts.
+read-only **credit / gift-card / store-credit ledgers**. Gift cards are issued with
+code, amount and expiry; balances are **server-enforced**. Loyalty configures point
+earn/redeem. Time Clock records staff shifts.
 
 ### CATALOG — Products · Categories · Variants · Promotions · Price Lists
-![Products](../docs/screenshots/desktop/06-products.png)
-![Categories](../docs/screenshots/desktop/07-categories.png)
+| Products | Categories |
+|---|---|
+| ![](../docs/screenshots/desktop/06-products.png) | ![](../docs/screenshots/desktop/07-categories.png) |
+| Variants | Promotions |
+| ![](../docs/screenshots/desktop/16-variants.png) | ![](../docs/screenshots/desktop/17-promotions.png) |
+
+![Price Lists](../docs/screenshots/desktop/18-price-lists.png)
+
 Product cards with stock badge, SKU, price, Edit/delete and **+ Add Product**;
-**variants & modifiers**; promotion rules; per-customer/store price lists.
+size/colour **variants & modifiers** per product; promotion rules applied
+server-side at checkout; per-customer/store **price lists**.
 
 ### INVENTORY — Stock · Stock Counts · Transfers · Suppliers · Purchasing
-![Stock](../docs/screenshots/desktop/08-stock.png)
+| Stock | Stock Counts |
+|---|---|
+| ![](../docs/screenshots/desktop/08-stock.png) | ![](../docs/screenshots/desktop/19-stock-counts.png) |
+| Transfers | Suppliers |
+| ![](../docs/screenshots/desktop/20-transfers.png) | ![](../docs/screenshots/desktop/21-suppliers.png) |
+
 ![Purchasing](../docs/screenshots/desktop/09-purchasing.png)
-Real-time stock with adjustments, **cycle counts**, inter-store transfers, supplier
-book, purchase orders with **partial receiving** (totals stay server-authoritative;
-client tax shown as an estimate).
+
+Real-time stock with adjustments and low-stock alerts, **cycle counts** with variance
+report, inter-store transfers with in-transit tracking, supplier book, purchase
+orders with **partial receiving** (totals stay server-authoritative; client tax
+shown as an estimate).
 
 ### MONEY & REPORTS — Reports · Refunds · Expenses · Approvals · Reconciliation
-![Reports](../docs/screenshots/desktop/10-reports.png)
+| Reports | Refunds |
+|---|---|
+| ![](../docs/screenshots/desktop/10-reports.png) | ![](../docs/screenshots/desktop/22-refunds.png) |
+| Expenses | Approvals |
+| ![](../docs/screenshots/desktop/23-expenses.png) | ![](../docs/screenshots/desktop/24-approvals.png) |
+
+![Reconciliation](../docs/screenshots/desktop/25-reconciliation.png)
+
 Filterable reporting (date / store / register / cashier): sales count, gross, tax,
 low stock, payment breakdown, **X report** (open shift) and **Z report** (day end),
 CSV export. Refunds post **GL reversals**; expenses flow through **approvals**;
-reconciliation matches the drawer against the ledger.
+reconciliation matches the drawer against the **double-entry ledger** and surfaces
+over/short.
 
 ### STORE SETUP — Registers · Sessions · Cash Movements · Stores · Companies · Users · Tax Rates · Settings
-![Registers](../docs/screenshots/desktop/11-registers.png)
-![Settings](../docs/screenshots/desktop/12-settings.png)
-Physical tills and their sessions, paid-in/paid-out cash movements, multi-store &
-multi-company (each with its own currency), users with roles (Owner / Manager /
-Cashier / Inventory) and PIN, tax rates, store settings.
+| Registers | Sessions |
+|---|---|
+| ![](../docs/screenshots/desktop/11-registers.png) | ![](../docs/screenshots/desktop/26-sessions.png) |
+| Cash Movements | Users |
+| ![](../docs/screenshots/desktop/27-cash-movements.png) | ![](../docs/screenshots/desktop/30-users.png) |
+| Stores | Companies |
+| ![](../docs/screenshots/desktop/28-stores.png) | ![](../docs/screenshots/desktop/29-companies.png) |
+| Tax Rates | Settings |
+| ![](../docs/screenshots/desktop/31-tax-rates.png) | ![](../docs/screenshots/desktop/12-settings.png) |
+
+Physical tills and their open/close sessions, paid-in/paid-out cash movements,
+multi-store & multi-company (each with its own currency), users with roles
+(Owner / Manager / Cashier / Inventory) and PIN, tax rates, store settings.
 
 ### On a phone or tablet browser
 | Phone browser | Tablet browser |
