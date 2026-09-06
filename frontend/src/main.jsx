@@ -10,6 +10,7 @@ const access=()=>localStorage.getItem("access_token");
 const list=x=>Array.isArray(x)?x:(x?.results||x?.data||x?.items||[]);
 // Currency is configured per company (Settings ▸ Companies). Any ISO code works worldwide.
 let CUR=localStorage.getItem("nova_currency")||"QAR";
+const BRAND={name:"",logo:""}; // filled from /stores/companies/ after sign-in; used on receipts
 const setCurrency=c=>{if(c){CUR=String(c).toUpperCase();localStorage.setItem("nova_currency",CUR)}};
 const money=x=>{const n=Number(x||0);try{return new Intl.NumberFormat(undefined,{style:"currency",currency:CUR,minimumFractionDigits:2,maximumFractionDigits:2}).format(n)}catch{return n.toFixed(2)+" "+CUR}};
 const label=x=>String(x||"").replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
@@ -21,7 +22,8 @@ function downloadCSV(rows,filename){if(!rows||!rows.length){ui.toast("Nothing to
 
 async function api(path,opt={},retry=true){
   const method=(opt.method||"GET").toUpperCase();
-  const headers={"Content-Type":"application/json","X-Request-ID":id(),...(opt.headers||{})};
+  const isForm=opt.body instanceof FormData;
+  const headers={...(isForm?{}:{"Content-Type":"application/json"}),"X-Request-ID":id(),...(opt.headers||{})};
   if(access())headers.Authorization=`Bearer ${access()}`;
   if(!["GET","HEAD","OPTIONS"].includes(method))headers["Idempotency-Key"]=headers["Idempotency-Key"]||id();
   const r=await fetch(API+path,{...opt,headers});
@@ -114,7 +116,7 @@ const RES={
  transactions:{title:"Business Transactions",path:"/transactions/transactions/",fields:["transaction_id","transaction_type","store","status","idempotency_key","device_id","user","created_at","committed_at"],relations:{store:"/stores/stores/",user:"/auth/users/"},readonlyAll:true},
  productionAudit:{title:"Production Audit Events",path:"/production/audit/",fields:["actor","action","reference_type","reference_id","store_id","register_id","device_id","request_id","ip_address","reason","created_at"],relations:{actor:"/auth/users/"},readonlyAll:true},
  heartbeats:{title:"Device Heartbeats",path:"/production/heartbeats/",fields:["device_id","store_id","last_seen","app_version","status"],readonlyAll:true,readonly:["last_seen"],actions:["heartbeat"]},
- companies:{title:"Companies",path:"/stores/companies/",fields:["name","legal_name","tax_number","currency","active"],choices:{currency:["QAR","USD","EUR","GBP","INR","AED","SAR","KWD","BHD","OMR","PKR","BDT","EGP","NGN","KES","ZAR","JPY","CNY","AUD","CAD","BRL","MXN","TRY","IDR","MYR","PHP","THB","VND"]}},
+ companies:{title:"Companies",path:"/stores/companies/",fields:["name","legal_name","tax_number","currency","logo","active"],fileFields:["logo"],choices:{currency:["QAR","USD","EUR","GBP","INR","AED","SAR","KWD","BHD","OMR","PKR","BDT","EGP","NGN","KES","ZAR","JPY","CNY","AUD","CAD","BRL","MXN","TRY","IDR","MYR","PHP","THB","VND"]}},
  stores:{title:"Stores",path:"/stores/stores/",fields:["company","name","code","address","phone","active"],relations:{company:"/stores/companies/"}},
  users:{title:"Users",path:"/auth/users/",fields:["username","first_name","last_name","email","phone","role","store","is_active"],relations:{store:"/stores/stores/"}},
  taxRates:{title:"Tax Rates",path:"/taxes/rates/",fields:["name","code","rate","inclusive","active"]},
@@ -162,7 +164,7 @@ function Login({done}){
 }
 
 /* ---------- shell ---------- */
-function Shell({page,setPage,me,children,online,company}){
+function Shell({page,setPage,me,children,online,company,logo}){
   const[open,setOpen]=useState(false);
   const[advOpen,setAdvOpen]=useState(false);
   const lvl=roleLevel(me?.role);
@@ -172,7 +174,7 @@ function Shell({page,setPage,me,children,online,company}){
   async function signout(){try{const rt=localStorage.getItem("refresh_token");if(rt)await api("/auth/logout/",{method:"POST",body:JSON.stringify({refresh:rt})})}catch{}localStorage.clear();location.reload()}
   return<div className="shell">
     <aside className={open?"side show":"side"}>
-      <div className="brand"><span className="mark"><Sparkles size={18}color="#fff"/></span><span className="logo"style={{color:"#fff"}}>S<span> POS</span></span></div>
+      <div className="brand"><span className="mark"style={logo?{background:"#fff",overflow:"hidden",padding:0}:undefined}>{logo?<img src={logo}alt=""style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<Sparkles size={18}color="#fff"/>}</span><span className="logo"style={{color:"#fff"}}>{company?<span style={{fontSize:15}}>{company}</span>:<>S<span> POS</span></>}</span></div>
       <div className="navwrap"><div className="nav">{NAVGROUPS.map((g,gi)=>{
         if(g.min>lvl)return null;
         const collapsible=g.adv;
@@ -194,7 +196,7 @@ function Shell({page,setPage,me,children,online,company}){
       <header>
         <button className="menub"onClick={()=>setOpen(!open)}><Menu size={18}/></button>
         <div className="topsearch"><Search size={16}/><input placeholder="Search…"/></div>
-        <div className="hdr-right">{!online&&<div className="connection offline"><WifiOff size={14}/>Working offline</div>}<div className="hdr-store">{company||"S POS"}</div></div>
+        <div className="hdr-right">{!online&&<div className="connection offline"><WifiOff size={14}/>Working offline</div>}<div className="hdr-store"style={{display:"flex",alignItems:"center",gap:8}}>{logo&&<img src={logo}alt=""style={{height:22,width:22,borderRadius:6,objectFit:"cover"}}/>}{company||"S POS"}</div></div>
       </header>
       <section className="body"key={page}>{children}</section>
     </main>
@@ -208,6 +210,11 @@ const BOOL=new Set(["active","inclusive","weight_based","tax_enabled","offline_e
 function Input({name,value,onChange,meta,readonly,lookup,choices}){
   const v=value??"";
   if(readonly)return<div className="readonly">{typeof v==="object"?JSON.stringify(v):String(v||"—")}</div>;
+  if(meta?.file)return<div>
+    {typeof v==="string"&&v&&<img src={v}alt=""style={{height:44,borderRadius:8,display:"block",marginBottom:6,background:"#fff",border:"1px solid var(--line,#e5e7eb)"}}/>}
+    {v instanceof File&&<img src={URL.createObjectURL(v)}alt=""style={{height:44,borderRadius:8,display:"block",marginBottom:6}}/>}
+    <input type="file"accept="image/*"onChange={e=>onChange(e.target.files?.[0]||"")}/>
+  </div>;
   if(BOOL.has(name))return<label style={{flexDirection:"row",alignItems:"center",gap:8,margin:0}}><input type="checkbox"checked={!!value}onChange={e=>onChange(e.target.checked)}/>Enabled</label>;
   if(choices?.length)return<select value={value??""}onChange={e=>onChange(e.target.value)}><option value="">Select…</option>{choices.map(x=><option key={x}value={x}>{label(x)}</option>)}</select>;
   if(meta?.relation)return<select value={value??""}onChange={e=>onChange(e.target.value)}><option value="">Select…</option>{lookup.map(x=><option value={x.id}key={x.id}>{x.name||x.code||x.username||x.invoice_number||x.id}</option>)}</select>;
@@ -225,7 +232,20 @@ function CRUD({kind}){
   useEffect(load,[load]);
   const shown=items.filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q.toLowerCase()));
   function begin(r=null){const f={};(cfg.fields||[]).forEach(x=>f[x]=r?.[x]??(BOOL.has(x)?true:""));setForm(f);setEdit(r||{})}
-  async function save(e){e.preventDefault();setErr("");try{const body={};for(const f of cfg.fields||[]){if(cfg.readonly?.includes(f))continue;if(form[f]!==undefined&&form[f]!==""){body[f]=form[f]}}await api(edit?.id?`${cfg.path}${edit.id}/`:cfg.path,{method:edit?.id?"PATCH":"POST",body:JSON.stringify(body)});setEdit(null);load();ui.toast(edit?.id?"Saved":"Created",{type:"ok",desc:cfg.title})}catch(x){setErr(x.message);ui.toast("Save failed",{type:"err",desc:x.message})}}
+  async function save(e){e.preventDefault();setErr("");try{
+    const fileFields=cfg.fileFields||[];
+    const hasFile=fileFields.some(f=>form[f]instanceof File);
+    let body;
+    if(hasFile){
+      body=new FormData();
+      for(const f of cfg.fields||[]){if(cfg.readonly?.includes(f))continue;const v=form[f];if(v===undefined||v==="")continue;
+        if(fileFields.includes(f)){if(v instanceof File)body.append(f,v);continue}
+        body.append(f,typeof v==="boolean"?String(v):v)}
+    }else{
+      const o={};for(const f of cfg.fields||[]){if(cfg.readonly?.includes(f)||fileFields.includes(f))continue;if(form[f]!==undefined&&form[f]!==""){o[f]=form[f]}}
+      body=JSON.stringify(o);
+    }
+    await api(edit?.id?`${cfg.path}${edit.id}/`:cfg.path,{method:edit?.id?"PATCH":"POST",body});setEdit(null);load();ui.toast(edit?.id?"Saved":"Created",{type:"ok",desc:cfg.title})}catch(x){setErr(x.message);ui.toast("Save failed",{type:"err",desc:x.message})}}
   async function remove(r){if(cfg.noDelete)return;if(!await ui.confirm("Delete record?","This cannot be undone.",{danger:true,ok:"Delete"}))return;try{await api(`${cfg.path}${r.id}/`,{method:"DELETE"});load();ui.toast("Deleted",{type:"ok"})}catch(x){setErr(x.message);ui.toast("Delete failed",{type:"err",desc:x.message})}}
   async function action(r,a){setErr("");try{
     let payload={};
@@ -239,7 +259,7 @@ function CRUD({kind}){
     {err&&<div className="error"><AlertTriangle size={15}/>{err}</div>}
     <div className="toolbar"><div className="search"><Search size={16}/><input value={q}onChange={e=>setQ(e.target.value)}placeholder={`Search ${cfg.title.toLowerCase()}…`}/></div><button className="ghost"onClick={load}><RefreshCw size={15}/>{busy?"Loading":"Refresh"}</button><span>{shown.length} records</span></div>
     <div className="table"><table><thead><tr>{cfg.fields.map(f=><th key={f}>{label(f)}</th>)}<th>Actions</th></tr></thead><tbody>
-      {shown.map(r=><tr key={r.id}>{cfg.fields.map(f=><td key={f}>{typeof r[f]==="object"?JSON.stringify(r[f]):String(r[f]??"—")}</td>)}<td className="actions">
+      {shown.map(r=><tr key={r.id}>{cfg.fields.map(f=><td key={f}>{cfg.fileFields?.includes(f)?(r[f]?<img src={r[f]}alt=""style={{height:26,borderRadius:6,verticalAlign:"middle"}}/>:"—"):typeof r[f]==="object"?JSON.stringify(r[f]):String(r[f]??"—")}</td>)}<td className="actions">
         {cfg.actions?.map(a=><button key={a}title={label(a)}onClick={()=>action(r,a)}>{a==="approve"?<Check size={14}/>:a==="reject"?<X size={14}/>:a==="heartbeat"?<Activity size={14}/>:a==="close"?<LogOut size={14}/>:a==="redeem"?<Gift size={14}/>:a==="earn"?<Plus size={14}/>:a==="pay"?<CreditCard size={14}/>:a==="void"?<X size={14}/>:<Settings size={14}/>}</button>)}
         {!cfg.readonlyAll&&!cfg.noEdit&&<button title="Edit"onClick={()=>begin(r)}><Settings size={14}/></button>}
         {!cfg.readonlyAll&&!cfg.noDelete&&<button className="danger"title="Delete"onClick={()=>remove(r)}><Trash2 size={14}/></button>}
@@ -247,7 +267,7 @@ function CRUD({kind}){
       {!shown.length&&<tr><td className="empty"colSpan={cfg.fields.length+1}>No records</td></tr>}
     </tbody></table></div>
     {edit!==null&&<div className="overlay"onMouseDown={()=>setEdit(null)}><div className="modal"onMouseDown={e=>e.stopPropagation()}><div className="modalhead"><h2>{edit.id?"Edit":"Add"} {cfg.title}</h2><button onClick={()=>setEdit(null)}><X/></button></div>
-      <form onSubmit={save}><div className="formgrid">{cfg.fields.map(f=><label key={f}>{label(f)}<Input name={f}value={form[f]}onChange={v=>setForm({...form,[f]:v})}meta={{relation:!!cfg.relations?.[f]}}readonly={cfg.readonly?.includes(f)}lookup={lookups[f]||[]}choices={cfg.choices?.[f]}/></label>)}</div>
+      <form onSubmit={save}><div className="formgrid">{cfg.fields.map(f=><label key={f}>{label(f)}<Input name={f}value={form[f]}onChange={v=>setForm({...form,[f]:v})}meta={{relation:!!cfg.relations?.[f],file:cfg.fileFields?.includes(f)}}readonly={cfg.readonly?.includes(f)}lookup={lookups[f]||[]}choices={cfg.choices?.[f]}/></label>)}</div>
       <div className="modalactions"><button type="button"className="ghost"onClick={()=>setEdit(null)}>Cancel</button><button className="primary">Save</button></div></form></div></div>}
   </>;
 }
@@ -432,7 +452,7 @@ function POS({me}){
     {receipt&&<div className="overlay"onMouseDown={()=>setReceipt(null)}><div className="modal"style={{maxWidth:420}}onMouseDown={e=>e.stopPropagation()}>
       <div className="modalhead"><h2>Sale receipt</h2><button onClick={()=>setReceipt(null)}><X/></button></div>
       <div className="receipt">
-        <div className="r-h"><b>S POS</b><div>Tax Invoice</div><small>{receipt.when}</small></div>
+        <div className="r-h">{BRAND.logo&&<img src={BRAND.logo}alt=""style={{height:44,borderRadius:8,margin:"0 auto 6px",display:"block"}}/>}<b>{BRAND.name||"S POS"}</b><div>Tax Invoice</div><small>{receipt.when}</small></div>
         <div className="r-l"><span>Txn</span><span>{receipt.transaction_id}</span></div>
         <div className="r-l"><span>Customer</span><span>{receipt.customer}</span></div><hr/>
         {receipt.lines.map((l,i)=><div className="r-l"key={i}><span>{l.qty}× {l.name}</span><span>{money(l.total)}</span></div>)}<hr/>
@@ -524,7 +544,7 @@ function SalesPage(){
     </tr>)}{!shown.length&&<tr><td className="empty"colSpan={cols.length+1}>No sales found</td></tr>}</tbody></table></div>
     {refundSale&&<div className="overlay"onMouseDown={()=>setRefundSale(null)}><div className="modal"onMouseDown={e=>e.stopPropagation()}><div className="modalhead"><h2>Refund · {refundSale.invoice_number}</h2><button onClick={()=>setRefundSale(null)}><X/></button></div><form onSubmit={submitRefund}><p className="muted">Select quantities to return. The server computes the refund and reverses inventory/accounting.</p>{refundRows.map((x,i)=><label key={x.sale_item_id}>{x.product_name} · max {x.max}<input type="number"min="0"max={x.max}step="0.001"value={x.quantity}onChange={e=>{const a=[...refundRows];a[i]={...a[i],quantity:Math.min(x.max,Math.max(0,Number(e.target.value)||0))};setRefundRows(a)}}/></label>)}<label>Reason<textarea value={reason}onChange={e=>setReason(e.target.value)}/></label><div className="modalactions"><button type="button"className="ghost"onClick={()=>setRefundSale(null)}>Cancel</button><button className="primary"disabled={busy}>Confirm refund</button></div></form></div></div>}
     {receipt&&<div className="overlay"onMouseDown={()=>setReceipt(null)}><div className="modal"style={{maxWidth:420}}onMouseDown={e=>e.stopPropagation()}><div className="modalhead"><h2>Receipt</h2><button onClick={()=>setReceipt(null)}><X/></button></div>
-      <div className="receipt"><div className="r-h"><b>{receipt.store||"NovaPOS"}</b><div>Invoice {receipt.invoice_number}</div><small>{String(receipt.created_at||"").slice(0,19).replace("T"," ")}</small></div>
+      <div className="receipt"><div className="r-h">{BRAND.logo&&<img src={BRAND.logo}alt=""style={{height:44,borderRadius:8,margin:"0 auto 6px",display:"block"}}/>}<b>{receipt.store||BRAND.name||"S POS"}</b><div>Invoice {receipt.invoice_number}</div><small>{String(receipt.created_at||"").slice(0,19).replace("T"," ")}</small></div>
         <div className="r-l"><span>Cashier</span><span>{receipt.cashier}</span></div><div className="r-l"><span>Customer</span><span>{receipt.customer||"Walk-in"}</span></div><hr/>
         {(receipt.items||[]).map((l,i)=><div className="r-l"key={i}><span>{l.quantity}× {l.name}</span><span>{money(l.line_total)}</span></div>)}<hr/>
         <div className="r-l"><span>Subtotal</span><span>{money(receipt.subtotal)}</span></div><div className="r-l"><span>Discount</span><span>−{money(receipt.discount_amount)}</span></div><div className="r-l"><span>Tax</span><span>{money(receipt.tax_amount)}</span></div>
@@ -716,14 +736,14 @@ function Setup({done}){
 }
 
 function App(){
-  const[auth,setAuth]=useState(!!access()),[page,setPage]=useState("dashboard"),[online,setOnline]=useState(navigator.onLine),[me,setMe]=useState(null),[,setCurTick]=useState(0),[company,setCompany]=useState(""),[setup,setSetup]=useState(undefined);
+  const[auth,setAuth]=useState(!!access()),[page,setPage]=useState("dashboard"),[online,setOnline]=useState(navigator.onLine),[me,setMe]=useState(null),[,setCurTick]=useState(0),[company,setCompany]=useState(""),[logo,setLogo]=useState(""),[setup,setSetup]=useState(undefined);
   useEffect(()=>{const on=()=>setOnline(true),off=()=>setOnline(false);window.addEventListener("online",on);window.addEventListener("offline",off);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off)}},[]);
   useEffect(()=>{let live=true;api("/auth/bootstrap/").then(d=>{if(live)setSetup(!!d.needs_setup)}).catch(()=>{if(live)setSetup(false)});return()=>{live=false}},[]);
-  useEffect(()=>{if(!auth)return;let live=true;api("/stores/companies/").then(d=>{const co=list(d)[0];if(co&&live){setCurrency(co.currency);setCompany(co.name||"");setCurTick(t=>t+1)}}).catch(()=>{});return()=>{live=false}},[auth]);
+  useEffect(()=>{if(!auth)return;let live=true;api("/stores/companies/").then(d=>{const co=list(d)[0];if(co&&live){setCurrency(co.currency);setCompany(co.name||"");setLogo(co.logo||"");BRAND.name=co.name||"";BRAND.logo=co.logo||"";setCurTick(t=>t+1)}}).catch(()=>{});return()=>{live=false}},[auth]);
   useEffect(()=>{if(!auth)return;let live=true;api("/auth/me/").then(d=>{if(live){setMe(d);setOnline(navigator.onLine)}}).catch(e=>{if(String(e.message).includes("Session expired")){localStorage.clear();if(live)setAuth(false)}else if(live)setOnline(false)});return()=>{live=false}},[auth]);
   if(setup===undefined)return<div className="splash"><div className="logo">S<span> POS</span><i className="dot"/></div><div className="spin"/></div>;
   if(setup)return<><UIHost/><Setup done={()=>{setSetup(false);setAuth(true)}}/></>;
   if(!auth)return<><UIHost/><Login done={()=>setAuth(true)}/></>;
-  return<><UIHost/><Shell page={page}setPage={setPage}me={me}online={online}company={company}>{page==="dashboard"?<Dashboard go={setPage}me={me}/>:<Special page={page}me={me}go={setPage}/>}</Shell></>;
+  return<><UIHost/><Shell page={page}setPage={setPage}me={me}online={online}company={company}logo={logo}>{page==="dashboard"?<Dashboard go={setPage}me={me}/>:<Special page={page}me={me}go={setPage}/>}</Shell></>;
 }
 createRoot(document.getElementById("root")).render(<App/>);

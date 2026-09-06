@@ -5,6 +5,7 @@ class Company(models.Model):
     legal_name=models.CharField(max_length=250,blank=True)
     tax_number=models.CharField(max_length=100,blank=True)
     currency=models.CharField(max_length=10,default="QAR")
+    logo=models.ImageField(upload_to="logos/",blank=True,null=True)
     active=models.BooleanField(default=True)
     def __str__(self): return self.name
 

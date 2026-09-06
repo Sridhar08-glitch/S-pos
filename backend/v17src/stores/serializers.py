@@ -5,7 +5,8 @@ class CompanySerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(source="active", required=False)
     class Meta:
         model = Company
-        fields = ["id","name","legal_name","tax_number","currency","active","is_active"]
+        fields = ["id","name","legal_name","tax_number","currency","logo","active","is_active"]
+        extra_kwargs = {"logo": {"required": False, "allow_null": True}}
 
 class StoreSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(source="active", required=False)

@@ -594,7 +594,7 @@ function Main({ onLogout }) {
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: C.bg }}>
       <View style={st.sidebar}>
         <View style={st.sideBrandRow}>
-          <View style={st.storeDot}><Text style={{ fontSize: 11 }}>🏬</Text></View>
+          <View style={[st.storeDot, company?.logo && { overflow: "hidden" }]}>{company?.logo ? <Image source={{ uri: company.logo }} style={{ width: "100%", height: "100%" }} /> : <Text style={{ fontSize: 11 }}>🏬</Text>}</View>
           <Text style={st.sideBrand} numberOfLines={1}>{company?.name || "S POS"}</Text>
         </View>
         {TABS.map(([k, t, ic]) => (
@@ -662,7 +662,7 @@ function Home({ me, company, active, refreshKey, isTab, goSell, goSales, openPag
       <View style={st.homeHead}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={st.storeDot}><Feather name="shopping-bag" size={11} color={C.blue} /></View>
+            <View style={[st.storeDot, company?.logo && { overflow: "hidden" }]}>{company?.logo ? <Image source={{ uri: company.logo }} style={{ width: "100%", height: "100%" }} /> : <Feather name="shopping-bag" size={11} color={C.blue} />}</View>
             <Text style={st.storeNameSm}>{company?.name || "My Store"}</Text>
           </View>
           <Text style={st.greetT}>{greet()},{"\n"}{me?.username || "there"}! 👋</Text>
@@ -1289,6 +1289,7 @@ function receiptHtml(sale, company, dateStr) {
     .tot{font-size:16px;font-weight:900}.grn{color:#16a34a}
     .foot{text-align:center;color:#64748b;font-size:12px;margin-top:16px}
   </style></head><body>
+    ${company?.logo ? `<img src="${company.logo}" style="height:56px;border-radius:10px;display:block;margin:0 auto 8px"/>` : ""}
     <h2>${company?.name || "S POS"}</h2><div class="sub">${dateStr}${sale.invoice ? " · #" + sale.invoice : ""}${sale.customer ? " · " + sale.customer : ""}</div>
     <table>${rows}</table><div class="line"></div>
     <table>
@@ -1325,7 +1326,7 @@ function ReceiptPage({ sale, company, onNew }) {
         <Text style={st.okSub}>Thank you for your purchase</Text>
         <View style={st.receiptCard}>
           <View style={{ alignItems: "center" }}>
-            <View style={st.rcLogo}><Feather name="shopping-bag" size={18} color={C.blue} /></View>
+            <View style={[st.rcLogo, company?.logo && { overflow: "hidden" }]}>{company?.logo ? <Image source={{ uri: company.logo }} style={{ width: "100%", height: "100%" }} /> : <Feather name="shopping-bag" size={18} color={C.blue} />}</View>
             <Text style={st.rcStoreBig}>{company?.name || "My Store"}</Text>
             <Text style={st.rcMuted}>{dateStr}</Text>
           </View>
@@ -1618,7 +1619,7 @@ function SaleDetailPage({ sale, company, onBack }) {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 30, width: "100%", maxWidth: 560, alignSelf: "center" }}>
         <View style={st.receiptCard}>
           <View style={{ alignItems: "center" }}>
-            <View style={st.rcLogo}><Feather name="shopping-bag" size={18} color={C.blue} /></View>
+            <View style={[st.rcLogo, company?.logo && { overflow: "hidden" }]}>{company?.logo ? <Image source={{ uri: company.logo }} style={{ width: "100%", height: "100%" }} /> : <Feather name="shopping-bag" size={18} color={C.blue} />}</View>
             <Text style={st.rcStoreBig}>{company?.name || "My Store"}</Text>
             <Text style={st.rcMuted}>{dt}</Text>
           </View>
@@ -1968,11 +1969,27 @@ function SettingsPage({ me, company, setCompany, onBack }) {
 }
 function StoreProfilePage({ company, setCompany, onBack }) {
   const [name, setName] = useState(company?.name || ""); const [cur, setCur] = useState(CUR); const [busy, setBusy] = useState(false);
+  const [logo, setLogo] = useState(null); // newly picked image asset
+  async function pickLogo() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Photos", "Allow photo access to set your store logo.");
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8, allowsEditing: true, aspect: [1, 1] });
+    if (!res.canceled && res.assets?.[0]) setLogo(res.assets[0]);
+  }
   async function save() {
     if (!name.trim() || !company?.id) return;
     setBusy(true);
     try {
-      const d = await api(`/stores/companies/${company.id}/`, { method: "PATCH", body: JSON.stringify({ name: name.trim(), currency: cur }) });
+      const body = { name: name.trim(), currency: cur };
+      if (logo && isLocal()) body.logo = logo.uri;
+      let d = await api(`/stores/companies/${company.id}/`, { method: "PATCH", body: JSON.stringify(body) });
+      if (logo && !isLocal()) {
+        const fd = new FormData();
+        const fn = (logo.fileName || "logo.jpg").replace(/[^\w.\-]/g, "_");
+        fd.append("logo", { uri: logo.uri, name: fn, type: logo.mimeType || "image/jpeg" });
+        try { d = await apiUpload(`/stores/companies/${company.id}/`, "PATCH", fd); }
+        catch (e) { Alert.alert("Logo upload", "Profile saved, but the logo failed: " + e.message); }
+      }
       setCompany && setCompany(d); CUR = d.currency || cur; store.set("cur", CUR);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Saved", "Store profile updated."); onBack();
@@ -1982,6 +1999,15 @@ function StoreProfilePage({ company, setCompany, onBack }) {
     <Slide>
       <SubHead title="Store Profile" onBack={onBack} />
       <ScrollView contentContainerStyle={{ padding: 14 }}>
+        <Text style={st.fieldLbl2}>STORE LOGO</Text>
+        <Press onPress={pickLogo} to={0.98}>
+          <View style={{ width: 86, height: 86, borderRadius: 20, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 4 }}>
+            {logo ? <Image source={{ uri: logo.uri }} style={{ width: "100%", height: "100%" }} />
+              : company?.logo ? <Image source={{ uri: company.logo }} style={{ width: "100%", height: "100%" }} />
+              : <Feather name="image" size={22} color={C.sub} />}
+          </View>
+        </Press>
+        <Text style={[st.rcMeta, { marginBottom: 12 }]}>Tap to change — shown on your dashboard and receipts.</Text>
         <Text style={st.fieldLbl2}>STORE NAME</Text>
         <TextInput style={st.formIn} value={name} onChangeText={setName} placeholder="Store name" placeholderTextColor={C.sub} />
         <Text style={[st.fieldLbl2, { marginTop: 14 }]}>CURRENCY</Text>
